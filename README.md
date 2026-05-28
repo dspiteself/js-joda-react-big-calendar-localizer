@@ -1,5 +1,10 @@
 # js-joda-react-big-calendar-localizer
 
+[![npm version](https://img.shields.io/npm/v/js-joda-react-big-calendar-localizer.svg)](https://www.npmjs.com/package/js-joda-react-big-calendar-localizer)
+[![npm downloads](https://img.shields.io/npm/dm/js-joda-react-big-calendar-localizer.svg)](https://www.npmjs.com/package/js-joda-react-big-calendar-localizer)
+[![CI](https://github.com/dspiteself/js-joda-react-big-calendar-localizer/actions/workflows/ci.yaml/badge.svg)](https://github.com/dspiteself/js-joda-react-big-calendar-localizer/actions/workflows/ci.yaml)
+[![license](https://img.shields.io/npm/l/js-joda-react-big-calendar-localizer.svg)](./LICENSE)
+
 A [react-big-calendar](https://github.com/jquense/react-big-calendar) localizer
 backed by [js-joda](https://js-joda.github.io/js-joda/) (`@js-joda/core`), with
 optional `@js-joda/locale` support for localized month / weekday names and
