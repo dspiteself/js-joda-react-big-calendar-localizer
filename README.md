@@ -152,6 +152,33 @@ The default `formats` are:
 }
 ```
 
+## Accepted date inputs
+
+react-big-calendar always hands the localizer `Date` objects, so you never have
+to think about this. But because js-joda has a rich family of temporal types,
+every localizer method will also gracefully coerce:
+
+- a js-joda **`ZonedDateTime`**, **`OffsetDateTime`**, **`Instant`**,
+  **`LocalDateTime`**, **`LocalDate`**, or **`LocalTime`**
+- an **epoch-milliseconds `number`**
+- an **ISO-8601 `string`** (`2026-05-28T14:30:00Z`, `2026-05-28T14:30`,
+  `2026-05-28`, zoned/offset forms, ...)
+
+Each is normalized to the configured `zone` (a `ZonedDateTime` carrying a zone
+is converted *same-instant*; a `LocalDate` becomes the start of that day). A
+`null` / `undefined` value resolves to "now" rather than throwing (matching the
+moment / dayjs localizers), and a genuinely unsupported value throws a clear
+`TypeError`. Methods always **return** plain `Date`s, as react-big-calendar
+expects.
+
+```ts
+import { Instant, ZonedDateTime } from '@js-joda/core'
+
+localizer.diff(Instant.now(), new Date(), 'minutes')      // mix types freely
+localizer.format('2026-05-28T14:30:00Z', 'MMMM d, h:mm a')
+localizer.eq(ZonedDateTime.parse('2026-05-28T16:30+02:00[Europe/Paris]'), someDate)
+```
+
 ## Time zones
 
 By default all `Date` ⇄ js-joda conversions go through

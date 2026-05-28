@@ -8,4 +8,5 @@ export type {
   JsJodaModule,
   JsJodaLocale,
   JsJodaLocalizerOptions,
+  DateInput,
 } from './jsJodaLocalizer'

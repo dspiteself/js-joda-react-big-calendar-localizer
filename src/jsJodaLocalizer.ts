@@ -25,6 +25,14 @@ export type JsJodaModule = typeof import('@js-joda/core')
  */
 export type JsJodaLocale = unknown
 
+/**
+ * Any value the localizer will coerce to a date. react-big-calendar always
+ * passes a `Date`, but the localizer additionally accepts js-joda temporals
+ * (`ZonedDateTime`, `OffsetDateTime`, `Instant`, `LocalDateTime`, `LocalDate`,
+ * `LocalTime`), an epoch-milliseconds `number`, and an ISO-8601 `string`.
+ */
+export type DateInput = Date | number | string | object | null | undefined
+
 export interface JsJodaLocalizerOptions {
   /**
    * The zone all `Date` <-> js-joda conversions happen in. Defaults to
@@ -130,14 +138,84 @@ export function jsJodaLocalizer(
    *  Date <-> js-joda conversions (always through the configured zone)   *
    * -------------------------------------------------------------------- */
 
-  // react-big-calendar occasionally calls localizer methods with a null /
-  // undefined date (e.g. TimeSlots' cache-key builder). The moment / dayjs
-  // localizers tolerate this, so we default to "now" rather than throwing.
-  const toZdt = (date: Date | null | undefined): ZonedDateTime =>
-    Instant.ofEpochMilli((date ?? new Date()).getTime()).atZone(zone)
+  // js-joda exposes a whole family of temporal types. The react-big-calendar
+  // contract is Date-based, but to interoperate gracefully we accept any of:
+  //   - `Date` (the normal case)
+  //   - a js-joda temporal: ZonedDateTime, OffsetDateTime, Instant,
+  //     LocalDateTime, LocalDate, LocalTime
+  //   - an epoch-milliseconds `number`
+  //   - an ISO-8601 `string`
+  //   - anything Date-like (exposing `getTime()`)
+  // and normalize it to a ZonedDateTime in the configured zone. A null /
+  // undefined value resolves to "now" (the moment / dayjs localizers tolerate
+  // this — e.g. TimeSlots' cache-key builder relies on it).
+  const J = jsJoda as unknown as Record<string, any>
+
+  function parseString(value: string): ZonedDateTime {
+    const attempts: Array<() => ZonedDateTime> = [
+      () => J.ZonedDateTime.parse(value).withZoneSameInstant(zone),
+      () => J.OffsetDateTime.parse(value).toInstant().atZone(zone),
+      () => Instant.parse(value).atZone(zone),
+      () => J.LocalDateTime.parse(value).atZone(zone),
+      () => J.LocalDate.parse(value).atStartOfDay(zone),
+    ]
+    for (const attempt of attempts) {
+      try {
+        return attempt()
+      } catch {
+        // Not this representation — try the next one.
+      }
+    }
+    const ms = new Date(value).getTime()
+    if (!Number.isNaN(ms)) return Instant.ofEpochMilli(ms).atZone(zone)
+    throw new TypeError(
+      `js-joda-react-big-calendar-localizer: could not parse date string "${value}"`
+    )
+  }
+
+  function toZdt(value: unknown): ZonedDateTime {
+    if (value == null) {
+      return Instant.ofEpochMilli(new Date().getTime()).atZone(zone)
+    }
+    if (value instanceof Date) {
+      return Instant.ofEpochMilli(value.getTime()).atZone(zone)
+    }
+    if (J.ZonedDateTime && value instanceof J.ZonedDateTime) {
+      return (value as ZonedDateTime).withZoneSameInstant(zone)
+    }
+    if (J.OffsetDateTime && value instanceof J.OffsetDateTime) {
+      return (value as any).toInstant().atZone(zone)
+    }
+    if (J.Instant && value instanceof J.Instant) {
+      return (value as any).atZone(zone)
+    }
+    if (J.LocalDateTime && value instanceof J.LocalDateTime) {
+      return (value as any).atZone(zone)
+    }
+    if (J.LocalDate && value instanceof J.LocalDate) {
+      return (value as any).atStartOfDay(zone)
+    }
+    if (J.LocalTime && value instanceof J.LocalTime) {
+      return (value as any).atDate(J.LocalDate.now(zone)).atZone(zone)
+    }
+    if (typeof value === 'number') {
+      return Instant.ofEpochMilli(value).atZone(zone)
+    }
+    if (typeof value === 'string') {
+      return parseString(value)
+    }
+    if (typeof (value as any).getTime === 'function') {
+      return Instant.ofEpochMilli((value as any).getTime()).atZone(zone)
+    }
+    throw new TypeError(
+      `js-joda-react-big-calendar-localizer: unsupported date value of type ${typeof value}`
+    )
+  }
 
   const toDate = (zdt: ZonedDateTime): Date =>
     new Date(zdt.toInstant().toEpochMilli())
+
+  const toMillis = (value: unknown): number => toZdt(value).toInstant().toEpochMilli()
 
   const chronoFor = (unit: Exclude<Unit, undefined>): ChronoUnitT => {
     switch (unit) {
@@ -213,7 +291,7 @@ export function jsJodaLocalizer(
   function range(start: Date, end: Date, unit = 'day'): Date[] {
     const u = normalizeUnit(unit) ?? 'day'
     const days: Date[] = []
-    let current = new Date(start.getTime())
+    let current = toDate(toZdt(start))
     while (lte(current, end)) {
       days.push(current)
       current = add(current, 1, u)
@@ -223,7 +301,7 @@ export function jsJodaLocalizer(
 
   function ceil(date: Date, unit?: string): Date {
     const floor = startOf(date, unit)
-    return floor.getTime() === date.getTime() ? floor : add(floor, 1, unit)
+    return floor.getTime() === toMillis(date) ? floor : add(floor, 1, unit)
   }
 
   function diff(a: Date, b: Date, unit = 'day'): number {
@@ -244,11 +322,11 @@ export function jsJodaLocalizer(
   }
 
   function min(a: Date, b: Date): Date {
-    return toZdt(a).isBefore(toZdt(b)) ? new Date(a.getTime()) : new Date(b.getTime())
+    return toZdt(a).isBefore(toZdt(b)) ? toDate(toZdt(a)) : toDate(toZdt(b))
   }
 
   function max(a: Date, b: Date): Date {
-    return toZdt(a).isAfter(toZdt(b)) ? new Date(a.getTime()) : new Date(b.getTime())
+    return toZdt(a).isAfter(toZdt(b)) ? toDate(toZdt(a)) : toDate(toZdt(b))
   }
 
   /* -------------------------------------------------------------------- *
@@ -305,11 +383,13 @@ export function jsJodaLocalizer(
    * -------------------------------------------------------------------- */
 
   function getTimezoneOffset(date: Date): number {
-    return date.getTimezoneOffset()
+    // Mirror Date#getTimezoneOffset (minutes *west* of UTC) but compute it from
+    // the configured zone so custom zones and non-Date inputs work too.
+    return -toZdt(date).offset().totalSeconds() / 60
   }
 
   function getDstOffset(start: Date, end: Date): number {
-    return start.getTimezoneOffset() - end.getTimezoneOffset()
+    return getTimezoneOffset(start) - getTimezoneOffset(end)
   }
 
   function getDayStartDstOffset(start: Date): number {
@@ -365,8 +445,8 @@ export function jsJodaLocalizer(
       startSort || // sort by start day first
       durB - durA || // events spanning multiple days go first
       (bAllDay ? 1 : 0) - (aAllDay ? 1 : 0) || // then all-day single-day events
-      +aStart - +bStart || // then by start time
-      +aEnd - +bEnd // then by end time
+      toMillis(aStart) - toMillis(bStart) || // then by start time
+      toMillis(aEnd) - toMillis(bEnd) // then by end time
     )
   }
 

@@ -53,6 +53,7 @@
   "devDependencies": {
     "@js-joda/core": "^6.0.1",
     "@js-joda/locale_en-us": "^5.1.0",
+    "@js-joda/timezone": "^2.25.1",
     "@types/react": "^19.0.0",
     "@types/react-big-calendar": "^1.16.0",
     "react": "^19.0.0",
