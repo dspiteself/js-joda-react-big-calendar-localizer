@@ -1,6 +1,6 @@
 {
   "name": "js-joda-react-big-calendar-localizer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A react-big-calendar localizer backed by js-joda (@js-joda/core), with optional @js-joda/locale support for localized month/day names.",
   "keywords": [
     "react-big-calendar",
