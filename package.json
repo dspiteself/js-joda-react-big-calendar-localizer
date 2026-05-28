@@ -1,0 +1,68 @@
+{
+  "name": "js-joda-react-big-calendar-localizer",
+  "version": "1.0.0",
+  "description": "A react-big-calendar localizer backed by js-joda (@js-joda/core), with optional @js-joda/locale support for localized month/day names.",
+  "keywords": [
+    "react-big-calendar",
+    "js-joda",
+    "localizer",
+    "calendar",
+    "date",
+    "datetime",
+    "react"
+  ],
+  "license": "MIT",
+  "author": "dspiteself <dspiteself@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dspiteself/js-joda-react-big-calendar-localizer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dspiteself/js-joda-react-big-calendar-localizer/issues"
+  },
+  "homepage": "https://github.com/dspiteself/js-joda-react-big-calendar-localizer#readme",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+  },
+  "peerDependencies": {
+    "@js-joda/core": ">=5.0.0 <7.0.0",
+    "react-big-calendar": ">=1.0.0 <2.0.0"
+  },
+  "devDependencies": {
+    "@js-joda/core": "^6.0.1",
+    "@js-joda/locale_en-us": "^5.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-big-calendar": "^1.16.0",
+    "react": "^19.0.0",
+    "react-big-calendar": "^1.19.4",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
