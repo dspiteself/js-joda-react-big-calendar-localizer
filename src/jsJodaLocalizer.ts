@@ -130,8 +130,11 @@ export function jsJodaLocalizer(
    *  Date <-> js-joda conversions (always through the configured zone)   *
    * -------------------------------------------------------------------- */
 
-  const toZdt = (date: Date): ZonedDateTime =>
-    Instant.ofEpochMilli(date.getTime()).atZone(zone)
+  // react-big-calendar occasionally calls localizer methods with a null /
+  // undefined date (e.g. TimeSlots' cache-key builder). The moment / dayjs
+  // localizers tolerate this, so we default to "now" rather than throwing.
+  const toZdt = (date: Date | null | undefined): ZonedDateTime =>
+    Instant.ofEpochMilli((date ?? new Date()).getTime()).atZone(zone)
 
   const toDate = (zdt: ZonedDateTime): Date =>
     new Date(zdt.toInstant().toEpochMilli())
@@ -175,7 +178,7 @@ export function jsJodaLocalizer(
 
   function startOf(date: Date, unit?: string): Date {
     const u = normalizeUnit(unit)
-    if (!u) return new Date(date.getTime())
+    if (!u) return toDate(toZdt(date))
     const zdt = toZdt(date)
     switch (u) {
       case 'millisecond':
@@ -201,7 +204,7 @@ export function jsJodaLocalizer(
 
   function endOf(date: Date, unit?: string): Date {
     const u = normalizeUnit(unit)
-    if (!u) return new Date(date.getTime())
+    if (!u) return toDate(toZdt(date))
     // End of a period is one millisecond before the start of the next period.
     const start = startOf(date, u)
     return new Date(add(start, 1, u).getTime() - 1)

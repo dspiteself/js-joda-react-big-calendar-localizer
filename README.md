@@ -177,6 +177,18 @@ npm test            # vitest
 npm run build       # tsup -> dist/ (esm + cjs + d.ts)
 ```
 
+### Tests
+
+The suite has two layers:
+
+- `test/jsJodaLocalizer.test.ts` — direct unit tests of every localizer method
+  (arithmetic, comparisons, week/month visibility, event helpers, formatting).
+- `test/{TimeSlots,eventLevels,DayEventLayout}.test.js` — react-big-calendar's
+  **own** util test suites, ported to drive the js-joda localizer. These are the
+  same tests RBC uses to validate its built-in moment / dayjs / luxon localizers
+  (they import the utils from `react-big-calendar/lib/utils/*` and feed them this
+  localizer), so passing them demonstrates behavioral parity.
+
 ## License
 
 [MIT](./LICENSE)
